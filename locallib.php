@@ -45,11 +45,11 @@ class assign_submission_helixassign extends assign_submission_plugin {
         global $DB;
         $aid=$this->assignment->get_instance()->id;
         if ($aid)
-		{
+        {
             $ret=$DB->get_record('assignsubmission_helixassign', array('assignment'=>$aid, 'submission'=>$submissionid));
-			if ($ret)
-			    return $ret;
-	    }
+            if ($ret)
+                return $ret;
+        }
 
         return false;
     }
@@ -149,7 +149,6 @@ class assign_submission_helixassign extends assign_submission_plugin {
             "    xmlDoc.open('POST', statusURL , false);\n".
             "    xmlDoc.setRequestHeader('Content-type','application/x-www-form-urlencoded');\n".
             "    xmlDoc.send(params);\n".
-            "    alert(xmlDoc.responseText);\n".
             "}\n".
             "</script>";
 
@@ -172,7 +171,47 @@ class assign_submission_helixassign extends assign_submission_plugin {
         if ($data->helixassign_activated!=1)
             return true;
 
-        if ($helixassignsubmission) {        
+        $params = array(
+            'context' => context_module::instance($this->assignment->get_course_module()->id),
+            'courseid' => $this->assignment->get_course()->id,
+            'objectid' => $submission->id,
+            'other' => array(
+                'pathnamehashes' => array(),
+                'content' => '',
+                'format' => false
+            )
+        );
+        if (!empty($submission->userid) && ($submission->userid != $USER->id)) {
+            $params['relateduserid'] = $submission->userid;
+        }
+        $event = \assignsubmission_helixassign\event\assessable_uploaded::create($params);
+        $event->trigger();
+
+        $groupname = null;
+        $groupid = 0;
+        // Get the group name as other fields are not transcribed in the logs and this information is important.
+        if (empty($submission->userid) && !empty($submission->groupid)) {
+            $groupname = $DB->get_field('groups', 'name', array('id' => $submission->groupid), '*', MUST_EXIST);
+            $groupid = $submission->groupid;
+        } else {
+            $params['relateduserid'] = $submission->userid;
+        }
+
+        // Unset the objectid and other field from params for use in submission events.
+        unset($params['objectid']);
+        $params['other'] = array(
+            'submissionid' => $submission->id,
+            'submissionattempt' => $submission->attemptnumber,
+            'submissionstatus' => $submission->status,
+            'groupid' => $groupid,
+            'groupname' => $groupname
+        );
+
+        if ($helixassignsubmission) {
+            $params['objectid'] = $helixassignsubmission->id;
+            $event = \assignsubmission_helixassign\event\submission_updated::create($params);
+            $event->set_assign($this->assignment);
+            $event->trigger();
             return true;
         } else {
             $helixassignsubmission = new stdClass();
@@ -181,7 +220,12 @@ class assign_submission_helixassign extends assign_submission_plugin {
             $helixassignsubmission->preid = $pre_rec->id;
             $helixassignsubmission->submission= $submission->id;
             $helixassignsubmission->servicesalt = $pre_rec->servicesalt;
-            return $DB->insert_record('assignsubmission_helixassign', $helixassignsubmission) > 0;
+            $helixassignsubmission->id = $DB->insert_record('assignsubmission_helixassign', $helixassignsubmission);
+            $params['objectid'] = $helixassignsubmission->id;
+            $event = \assignsubmission_helixassign\event\submission_created::create($params);
+            $event->set_assign($this->assignment);
+            $event->trigger();
+            return $helixassignsubmission->id > 0;
         }
     }
 
@@ -195,7 +239,6 @@ class assign_submission_helixassign extends assign_submission_plugin {
     public function view_summary(stdClass $submission, & $showviewlink) {
         $showviewlink = true;
         $helixassignsubmission = $this->get_helixassign_submission($submission->id);
-
         if ($helixassignsubmission) {
 
             global $PAGE;
@@ -327,8 +370,10 @@ class assign_submission_helixassign extends assign_submission_plugin {
      */
     public function is_empty(stdClass $submission) {
         $helixassignsubmission = $this->get_helixassign_submission($submission->id);
-        if ($helixassignsubmission)
-            return false;
+        if ($helixassignsubmission) {
+            return helixmedia_is_preid_empty($helixassignsubmission->preid, $this, $submission->userid);
+        }
+
         return true;
     }
 

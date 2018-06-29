@@ -15,6 +15,7 @@ $string['default'] = 'Enabled by default';
 $string['default_help'] = 'If set, this submission method will be enabled by default for all new assignments.';
 $string['enabled'] = 'MEDIAL Video Assignments enabled';
 $string['enabled_help'] = 'If enabled, students are able submit videos using the MEDIAL submission system.';
+$string['eventassessableuploaded'] = 'A MEDIAL submission has been uploaded.';
 $string['nosubmission'] = 'Nothing has been submitted to MEDIAL for this assignment';
 $string['nopermission'] = 'You do not have permission to use Video Assignments';
 $string['helixassign'] = 'Video Assignment';
