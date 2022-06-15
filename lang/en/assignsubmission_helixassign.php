@@ -42,3 +42,4 @@ $string['version_warning_mes'] = 'The MEDIAL submission plugin requires you to h
 $string['version_warning_mes2'] = 'installed on your moodle system.';
 $string['view_submission'] = 'View Video Submission';
 $string['no_permission'] = 'You do not have permission to use Video Assignments';
+$string['privacy:metadata'] = 'The helixassign plugin does not store personal data.';
