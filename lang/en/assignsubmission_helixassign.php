@@ -23,7 +23,7 @@
  */
 
 $string['allowhelixassignsubmissions'] = 'Enabled';
-$string['helixassign:can_use'] = 'Can enable video submissions when creating new assignment activities';
+$string['helixassign:can_use'] = 'Can enable MEDIAL video submissions when creating new assignment activities';
 $string['default'] = 'Enabled by default';
 $string['default_help'] = 'If set, this submission method will be enabled by default for all new assignments.';
 $string['enabled'] = 'MEDIAL Video Assignments enabled';
