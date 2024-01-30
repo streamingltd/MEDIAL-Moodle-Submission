@@ -167,7 +167,7 @@ class assign_submission_helixassign extends assign_submission_plugin {
       * @return bool
       */
     public function save(stdClass $submission, stdClass $data) {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
 
         if (helixmedia_is_preid_empty($data->helixassign_preid, $this, $submission->userid)) {
             return true;
@@ -188,7 +188,14 @@ class assign_submission_helixassign extends assign_submission_plugin {
         if (!empty($submission->userid) && ($submission->userid != $USER->id)) {
             $params['relateduserid'] = $submission->userid;
         }
-        $event = \assignsubmission_helixassign\event\assessable_uploaded::create($params);
+
+        // Use an event which is compatible with the legacy log if legacy log logging is enabled.
+        // Moodle 4.2+ no longer supports legacy logging  and will emit a notice if the methods are present in events.
+        if ($CFG->version < 2023042400 && get_config('logstore_legacy', 'loglegacy') == 1) {
+            $event = \assignsubmission_helixassign\event\assessable_compat_uploaded::create($params);
+        } else {
+            $event = \assignsubmission_helixassign\event\assessable_uploaded::create($params);
+        }
         $event->trigger();
 
         $groupname = null;
@@ -354,10 +361,10 @@ class assign_submission_helixassign extends assign_submission_plugin {
     /**
      * Formatting for log info
      *
-     * @param stdClass $submission The new submission
+     * @param $submission The new submission
      * @return string
      */
-    public function format_for_log(stdClass $submission) {
+    public function format_for_log($submission = false) {
         return get_string('helixsubmissionlog', 'assignsubmission_helixassign');
     }
 

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The assignsubmission_helixassign assessable uploaded event.
+ * The assignsubmission_helixassign assessable uploaded event with legacy log compatibility.
  *
  * @package    assignsubmission_helixassign
  * @copyright  2013 Frédéric Massart, 2018 Tim Williams
@@ -27,7 +27,7 @@ namespace assignsubmission_helixassign\event;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * The assignsubmission_helixassign assessable uploaded event class.
+ * The assignsubmission_helixassign assessable uploaded event class with legacy log compatibility.
  *
  * @property-read array $other {
  *      Extra information about event.
@@ -40,47 +40,33 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2013 Frédéric Massart, 2018 Tim Williams
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class assessable_uploaded extends \core\event\assessable_uploaded {
+class assessable_compat_uploaded extends assessable_uploaded {
 
     /**
-     * Returns description of what happened.
+     * Legacy event data if get_legacy_eventname() is not empty.
+     *
+     * @return stdClass
+     */
+    protected function get_legacy_eventdata() {
+        $eventdata = new \stdClass();
+        $eventdata->modulename = 'assign';
+        $eventdata->cmid = $this->contextinstanceid;
+        $eventdata->itemid = $this->objectid;
+        $eventdata->courseid = $this->courseid;
+        $eventdata->userid = $this->userid;
+        $eventdata->content = $this->other['content'];
+        if ($this->other['pathnamehashes']) {
+            $eventdata->pathnamehashes = $this->other['pathnamehashes'];
+        }
+        return $eventdata;
+    }
+
+    /**
+     * Return the legacy event name.
      *
      * @return string
      */
-    public function get_description() {
-        return "The user with id '$this->userid' has saved a MEDIAL submission with id '$this->objectid' " .
-            "in the assignment activity with course module id '$this->contextinstanceid'.";
-    }
-
-    /**
-     * Return localised event name.
-     *
-     * @return string
-     */
-    public static function get_name() {
-        return get_string('eventassessableuploaded', 'assignsubmission_helixassign');
-    }
-
-    /**
-     * Get URL related to the action.
-     *
-     * @return \moodle_url
-     */
-    public function get_url() {
-        return new \moodle_url('/mod/assign/view.php', array('id' => $this->contextinstanceid));
-    }
-
-    /**
-     * Init method.
-     *
-     * @return void
-     */
-    protected function init() {
-        parent::init();
-        $this->data['objecttable'] = 'assign_submission';
-    }
-
-    public static function get_objectid_mapping() {
-        return array('db' => 'assign_submission', 'restore' => 'submission');
+    public static function get_legacy_eventname() {
+        return 'assessable_content_uploaded';
     }
 }
